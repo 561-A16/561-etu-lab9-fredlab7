@@ -1,0 +1,11 @@
+FROM microsoft/dotnet:latest
+
+COPY publish /src
+
+EXPOSE 5000
+
+ENV ASPNETCORE_URLS http://+:5000
+
+WORKDIR /src
+
+CMD ["dotnet", "webapp.dll"]

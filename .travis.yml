@@ -1,0 +1,35 @@
+sudo: required
+
+language: csharp
+
+branches:
+  only:
+  - master
+
+cache:
+    directories:
+    - $PWD/packages
+
+addons:
+  ssh_known_hosts:
+  - 159.203.33.172
+
+services:
+  - docker
+
+before_install:
+    - sudo apt-get -qq update
+    - sudo apt-get install sshpass
+
+script:
+    - docker build -t webapp:test -f ./dockerfile/test .
+    - docker run -it --rm -v $PWD/publish:/root/publish -v $PWD/packages:/root/.nuget/packages webapp:test
+
+after_success:
+    - docker build -t fredlab7/webapp:latest -f ./dockerfile/release .
+    - docker login -u=$DOCKER_HUB_USERNAME -p=$DOCKER_HUB_PASSWD
+    - docker push fredlab7/webapp:latest
+    - export SSHPASS=$DIGITAL_OCEAN_PASSWD
+    - sshpass -e scp -o StrictHostKeyChecking=no $PWD/scripts/removeDockerRunning.sh u1436958@159.203.33.172:/home/u1436958
+    - sshpass -e ssh u1436958@159.203.33.172 'chmod +x removeDockerRunning.sh'
+    - sshpass -e ssh u1436958@159.203.33.172 'sh removeDockerRunning.sh'
